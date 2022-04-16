@@ -4,14 +4,15 @@ pragma solidity 0.8.4;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 
-contract WrappedDoge is ERC20 {
+contract CandyCane is ERC20 {
   address public minter;
 
   //add minter changed event
   event MinterChanged(address indexed from, address to);
 
-  constructor() public payable ERC20("Wrapped Doge Coin", "WDOGE") {
+  constructor() public payable ERC20("Candy Cane", "CANE") {
     minter = msg.sender;
+    _mint(msg.sender, "25000000");
   }
 
   function passMinterRole(address dBank) public returns(bool) {

@@ -4,7 +4,7 @@ const {
 
 describe("Peer-To-Peer Swap", function () {
   
-  it("Wallet A Swaps 15 Doge(ERC20) for 21 Shiba(ERC20) from Wallet B ", async function () {
+  it("Wallet A Swaps 15 Doge(ERC20) & 'NFT #1' for 21 Shiba(ERC20) from Wallet B ", async function () {
     const [walletA, walletB] = await ethers.getSigners()
 
     //Doge ERC20 Contract
@@ -21,6 +21,11 @@ describe("Peer-To-Peer Swap", function () {
     const shiba = await Shiba.deploy();
     await shiba.deployed();
 
+    //Wallet A Minted NFT #1
+    const GameItem = await ethers.getContractFactory("GameItem");
+    const gameItem = await GameItem.deploy();
+    await gameItem.deployed();
+
     //Wallet B has been minted 21 Shiba from Wallet A (walletA)
     const mintShibaTx = await shiba.mint(walletB.address, "21000000000000000000")
     await mintShibaTx.wait();
@@ -28,15 +33,21 @@ describe("Peer-To-Peer Swap", function () {
     //Check Balances before Trade
     expect(await shiba.balanceOf(walletB.address)).to.equal("21000000000000000000");
     expect(await doge.balanceOf(walletB.address)).to.equal("0");
+    expect(await gameItem.balanceOf(walletB.address)).to.equal("0");
 
     expect(await doge.balanceOf(walletA.address)).to.equal("15000000000000000000");
     expect(await shiba.balanceOf(walletA.address)).to.equal("0");
+    expect(await gameItem.balanceOf(walletA.address)).to.equal("1");
     
 
     //Peer-to-peer trade
     const P2P = await ethers.getContractFactory("P2PTrade");
     const p2p = await P2P.deploy();
     await p2p.deployed();
+
+    //Approve NFT Swap
+    const nftTx = await gameItem.approve(p2p.address, 1)
+    await nftTx.wait();
 
     //Approve Doge Allowance of Wallet A
     const approveDogeTx = await doge.approve(p2p.address, "15000000000000000000")
@@ -52,7 +63,14 @@ describe("Peer-To-Peer Swap", function () {
       contractAddress: doge.address,
       amount: ethers.utils.parseEther("15"),
       id: 0
-    }]
+    },
+    {
+      assetType: 1,
+      contractAddress: gameItem.address,
+      amount: 1,
+      id: 1
+    }
+  ]
 
     const fromB = [{
       assetType: 0,
@@ -78,9 +96,13 @@ describe("Peer-To-Peer Swap", function () {
 
     expect(await shiba.balanceOf(walletB.address)).to.equal("0");
     expect(await doge.balanceOf(walletB.address)).to.equal("15000000000000000000");
+    expect(await gameItem.balanceOf(walletB.address)).to.equal("1");
+
 
     expect(await doge.balanceOf(walletA.address)).to.equal("0");
     expect(await shiba.balanceOf(walletA.address)).to.equal("21000000000000000000");
+    expect(await gameItem.balanceOf(walletA.address)).to.equal("0");
+
 
   });
 });
@@ -120,6 +142,8 @@ async function walletBSignature(_signer, _send,_acquire, _counterParty, _nonce, 
   }
 
   const signature = await _signer._signTypedData(domain,types,value)
+
+  console.log(signature)
   let { v, r, s } = ethers.utils.splitSignature(signature)
 
   return {v, r, s}

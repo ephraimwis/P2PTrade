@@ -52,8 +52,8 @@ contract P2PTrade is ReentrancyGuard {
             EIP712DOMAIN_TYPEHASH,
             keccak256(bytes("P2PTrade")),
             keccak256(bytes("1")),
-            1,
-            0xCcCCccccCCCCcCCCCCCcCcCccCcCCCcCcccccccC
+            block.chainid,
+            address(this)
         ));
     }
 
@@ -67,10 +67,10 @@ contract P2PTrade is ReentrancyGuard {
         (bool success,) = token.call(abi.encodeWithSelector(ERC721_SELECTOR, from, to, id));
         require(success, 'ERC721: TRANSFER_FAILED');
     }
-    bytes4 private constant ERC1155_SELECTOR = bytes4(keccak256(bytes('safeTransferFrom(address,address,uint256,bytes)')));
-    function safeERC1155TransferFrom(address token, address from, address to, uint256 amount, uint256 id) private {
-        (bool success,) = token.call(abi.encodeWithSelector(ERC1155_SELECTOR, from, to, amount, id, ""));
-        require(success, 'ERC1155: TRANSFER_FAILED');
+    bytes4 private constant ERC1155_SELECTOR = bytes4(keccak256(bytes('safeTransferFrom(address,address,uint256,uint256,bytes)')));
+    function safeERC1155TransferFrom(address token, address from, address to, uint256 id, uint256 amount) public {
+        (bool success,) = token.call(abi.encodeWithSelector(ERC1155_SELECTOR, from, to, id, amount, ""));
+        require(success, 'ERC1155: Failed Transaction');
     }
 
     function hashItems(Items[] calldata items) internal pure returns (bytes32) {
@@ -104,13 +104,13 @@ contract P2PTrade is ReentrancyGuard {
             Items calldata item = fromA[i];
             if (item.assetType == ERC20) safeERC20TransferFrom(item.contractAddress, msg.sender, walletB, item.amount);
             else if (item.assetType == ERC721) safeERC721TransferFrom(item.contractAddress, msg.sender, walletB, item.id);
-            else if (item.assetType == ERC1155) safeERC1155TransferFrom(item.contractAddress, msg.sender, walletB, item.amount, item.id);
+            else if (item.assetType == ERC1155) safeERC1155TransferFrom(item.contractAddress, msg.sender, walletB, item.id, item.amount);
         }
         for (uint i = 0; i < fromB.length; i++) {
             Items calldata item = fromB[i];
             if (item.assetType == ERC20) safeERC20TransferFrom(item.contractAddress, walletB, msg.sender, item.amount);
             else if (item.assetType == ERC721) safeERC721TransferFrom(item.contractAddress, walletB, msg.sender, item.id);
-            else if (item.assetType == ERC1155) safeERC1155TransferFrom(item.contractAddress, walletB, msg.sender, item.amount, item.id);
+            else if (item.assetType == ERC1155) safeERC1155TransferFrom(item.contractAddress, walletB, msg.sender, item.id, item.amount);
         }
         // Overflow is possible, but not-likely to be reached.
         unchecked {

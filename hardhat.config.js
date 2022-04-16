@@ -16,6 +16,25 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
+const PRIVATE_KEY =
+  "06763fce4b7dd74a3e89e5c6498cd1bd2388f246ef1402019ad104a851fa7aba";
+
 module.exports = {
   solidity: "0.8.4",
+  networks: {
+    hardhat: {
+      forking: {
+        url: "https://eth-mainnet.alchemyapi.io/v2/kHlA1V0hZmjw92ZB0rIuiOTVHnTtyAzY",
+      },
+    },
+    rinkeby: {
+      accounts: [`0x${PRIVATE_KEY}`],
+      url: `https://eth-rinkeby.alchemyapi.io/v2/kHlA1V0hZmjw92ZB0rIuiOTVHnTtyAzY`,
+    },
+
+    arbitrum: {
+      url: "https://rinkeby.arbitrum.io/rpc",
+      accounts: [`0x${PRIVATE_KEY}`],
+    },
+  },
 };
